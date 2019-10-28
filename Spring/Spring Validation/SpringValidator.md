@@ -258,3 +258,203 @@ public void initValidator() {
 ...
 ```
 
+# 使用指北
+
+## 声明和使用Bean约束
+
+### 声明Bean约束
+
+`Jakarta Bean Validation`中对Bean的约束可以使用注解的方式。对Bean的约束有四种类型，分别是：
+
+- 字段约束
+
+- 属性约束
+
+- 容器元素约束
+
+- 类约束
+
+需要注意的是并不是所有的注解都适用以上四种类型，而且`Jakarta Bean Validation`中并没有定义任何一种可以用作类约束的注解。`java.lang.annotation.Target`该注解决定了一个注解可以用在什么地方。
+
+#### 字段约束
+
+如下是一个字段约束的示例：
+
+```java
+public class Car {
+	@NotNull
+    private String manufacturer;
+	@AssertTrue
+    private boolean isRegistered;
+	public Car(String manufacturer, boolean isRegistered) { 
+        this.manufacturer = manufacturer;
+        this.isRegistered = isRegistered;
+	} 
+    //getters and setters... 
+}
+```
+
+支持字段约束的注解可以使用在除静态类型上的任意字段，包括`public`、`private`等。
+
+#### 属性约束
+
+```java
+public class Car {
+    private String manufacturer;
+    private boolean isRegistered;
+
+    public Car(String manufacturer, boolean isRegistered) {
+        this.manufacturer = manufacturer;
+        this.isRegistered = isRegistered;
+    }
+
+    @NotNull
+    public String getManufacturer() {
+        return manufacturer;
+    }
+
+    public void setManufacturer(String manufacturer) {
+        this.manufacturer = manufacturer;
+    }
+
+    @AssertTrue
+    public boolean isRegistered() {
+        return isRegistered;
+    }
+
+    public void setRegistered(boolean isRegistered) {
+        this.isRegistered = isRegistered;
+    }
+}
+```
+
+#### 容器元素约束
+
+
+
+#### 类约束
+
+#### 约束继承
+
+类继承将继承所有方法以及其上约束。
+
+#### 级联对象验证
+
+`@Valid`注解将对于所有级联的对象进行验证。注意：`@Valid`注解如果属性为`null`默认是校验成功的，也就是校验引擎会忽略`null`。
+
+### 验证Bean约束
+
+#### 获取`Validator`实例
+
+验证的方法是使用`Validator`实例，创建`Validator`实例需要使用到`Validation`类和`ValidatorFactory`，获取`ValidatorFactory`最简单的方法是使用静态方法`Validation#buildDefaultValidatorFactory`.
+
+```java
+ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+validator = factory.getValidator();
+```
+
+这样会得到一个使用默认配置的`Validator`实例。
+
+#### `Validator`实例解析
+
+`Validator`借口拥有三个方法能够用来校验整个实体或其中某一个属性。
+
+三个方法的返回值都是`Set<ConstraintViolation>`。如果返回的set为空，表明校验成功。否则没一次校验不通过都有一个`ConstraintViolation`对象被加入到set中。
+
+所有的方法都具有`var-args`式参数，类似于如下
+
+```java
+<T> Set<ConstraintViolation<T>> validate(T object, Class<?>... groups);
+```
+
+可以接受0或多个Class类型参数来表明使用哪个组，如果不使用groups参数，将使用默认组(`javax.validation.groups.Default`)。
+
+##### `Validator#validate()`
+
+使用`validate()`方法将校验给定bean的所有约束。
+
+##### `Validator#validateProperty()`
+
+该方法的声明如下
+
+```java
+<T> Set<ConstraintViolation<T>> validateProperty(T object,
+													 String propertyName,
+													 Class<?>... groups);
+```
+
+该方法将校验一个名称为`propertyName`的属性。
+
+##### `Validator#validateValue()`
+
+该方法的声明如下
+
+```java
+<T> Set<ConstraintViolation<T>> validateValue(Class<T> beanType,
+												  String propertyName,
+												  Object value,
+												  Class<?>... groups);
+```
+
+使用该方法可以验证名称为`propertyName`的属性值是否为给定的`value`。
+
+#### `ConstraintViolation`
+
+##### `ConstraintViolation`方法
+
+使用`ConstraintViolation`的一些方法能够获取到校验失败的信息。
+
+| 方法                        | 解释 | 例子 |
+| --------------------------- | ---- | ---- |
+| `getMessage()`              |      |      |
+| `getMessageTemplate()`      |      |      |
+| `getRootBean()`             |      |      |
+| `getRootBeanClass()`        |      |      |
+| `getLeafBean()`             |      |      |
+| `getPropertyPath()`         |      |      |
+| `getInvalidValue()`         |      |      |
+| `getConstraintDescriptor()` |      |      |
+
+### 内置约束
+
+Hibernate Validator包含了一些通用的约束。这些是在`Jakarta Bean Validation`规范中规定的。此外`Hibernate Validator`提供了一些有用的自定义约束。
+
+#### `Jakarta Bean Validation`约束
+
+在`Jakarta Bean Validation`规范中没有注解能够用于类。
+
+| 注解                            |      |
+| ------------------------------- | ---- |
+| @AssertFalse                    |      |
+| @AssertTrue                     |      |
+| @DecimalMax(value=, inclusive=) |      |
+| @DecimalMin(value=, inclusive=) |      |
+| @Digits(integer=, fraction=)    |      |
+| @Email                          |      |
+| @Future                         |      |
+| @Min(value=)                    |      |
+| @Max(value=)                    |      |
+| @NotBlank                       |      |
+| @NotEmpty                       |      |
+| @NotNull                        |      |
+| @Negative                       |      |
+| @Negative                       |      |
+| @NegativeOrZero                 |      |
+| @Null                           |      |
+| @Past                           |      |
+| @PastOrPresent                  |      |
+| @Pattern(regex=, flags=)        |      |
+| @Positive                       |      |
+| @PositiveOrZero                 |      |
+| @Size(min=, max=)               |      |
+
+#### 自定义约束
+
+这些内置自定义约束除了`@ScriptAssert`为类约束，其余均不可用于类。
+
+// TODO
+
+## 声明和验证方法约束
+
+
+
